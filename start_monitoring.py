@@ -21,10 +21,12 @@ def generate_alert(frame):
 
 def check_frame(frame):
   label, confidence = classifier.get_prediction(frame)
-  if label == NailbittingClassification.BITING and confidence >= 85:
-    generate_alert(frame)
+  to_prt = "bitting" if label == NailbittingClassification.BITING  else "non bitting"
+  print("label is " + to_prt + " with accuracy " + str(confidence) + "%")
+  #if label == NailbittingClassification.BITING and confidence >= 95:
+    #generate_alert(frame)
 
-monitor = NailbittingMonitor(1)
+monitor = NailbittingMonitor(3)
 classifier = NailbittingClassifier()
 toaster = ToastNotifier()
 
