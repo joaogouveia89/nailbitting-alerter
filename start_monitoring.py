@@ -23,11 +23,14 @@ def check_frame(frame):
   label, confidence = classifier.get_prediction(frame)
   to_prt = "bitting" if label == NailbittingClassification.BITING  else "non bitting"
   print("label is " + to_prt + " with accuracy " + str(confidence) + "%")
-  #if label == NailbittingClassification.BITING and confidence >= 95:
-    #generate_alert(frame)
+  if label == NailbittingClassification.BITING and confidence >= 95:
+    generate_alert(frame)
 
 monitor = NailbittingMonitor(3)
 classifier = NailbittingClassifier()
 toaster = ToastNotifier()
 
 monitor.start(check_frame)
+
+
+# image catching in monitor is loosing quality, try to convert all the trainned images to B/W and also convert the frame in monitor line 16, to B/W as well and then check the confidence of predictions again
