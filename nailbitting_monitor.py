@@ -12,8 +12,6 @@ class NailbittingMonitor:
         vid = cv2.VideoCapture(0)
         while(self.keep_running):
             _, frame = vid.read()
-             #Convert the captured frame into RGB
-            frame = Image.fromarray(frame, 'RGB')
             callback(frame)
             time.sleep(self.__interval)
         vid.release()

@@ -1,6 +1,9 @@
 import numpy as np
 import os
+import cv2
 
+import tensorflow_hub as tfh
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow import data
 from tensorflow import expand_dims
@@ -17,8 +20,8 @@ class NailbittingClassifier:
 
     __data_pathlib = pathlib.Path(__data_path)
     __batch_size = 32
-    __img_height = 180
-    __img_width = 180
+    __img_height = 320
+    __img_width = 140
     __training_epochs = 10
     __AUTOTUNE = data.AUTOTUNE
 
@@ -46,47 +49,36 @@ class NailbittingClassifier:
         if os.path.exists(self.__model_file) == True:
             return  keras.models.load_model(self.__model_file)
         else:
-            for image_batch, labels_batch in self.__dataset_tranning:
-                print(image_batch.shape)
-                print(labels_batch.shape)
-                break
-            
-            self.__dataset_tranning = self.__dataset_tranning.cache().shuffle(1000).prefetch(buffer_size=self.__AUTOTUNE)
-            self. __dataset_validation = self. __dataset_validation.cache().prefetch(buffer_size=self.__AUTOTUNE)
-
-            normalization_layer = layers.Rescaling(1./255)
-
-            normalized_ds = self.__dataset_tranning.map(lambda x, y: (normalization_layer(x), y))
-            image_batch, labels_batch = next(iter(normalized_ds))
-            first_image = image_batch[0]
-            # Notice the pixel values are now in `[0,1]`.
-            print(np.min(first_image), np.max(first_image))
+            IMAGE_SIZE = (384, 384)
 
             model = keras.models.Sequential([
-                layers.Rescaling(1./255, input_shape=(self.__img_height, self.__img_width, 3)),
-                layers.Conv2D(16, 3, padding='same', activation='relu'),
-                layers.MaxPooling2D(),
-                layers.Conv2D(32, 3, padding='same', activation='relu'),
-                layers.MaxPooling2D(),
-                layers.Conv2D(64, 3, padding='same', activation='relu'),
-                layers.MaxPooling2D(),
-                layers.Flatten(),
-                layers.Dense(128, activation='relu'),
-                layers.Dense(2)
+                keras.layers.InputLayer(input_shape=IMAGE_SIZE + (3,)),
+                tfh.KerasLayer("https://tfhub.dev/google/imagenet/efficientnet_v2_imagenet21k_xl/feature_vector/2", trainable=True),
+                keras.layers.Dropout(rate=0.2),
+                keras.layers.Dense(len(self.__class_names),
+                                    kernel_regularizer=tf.keras.regularizers.l2(0.0001))
             ])
 
-            model.compile(optimizer='adam',
-                            loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                            metrics=['accuracy'])
+            model.build((None,)+IMAGE_SIZE+(3,))
 
             model.summary()
 
-            history = model.fit(
-                self.__dataset_tranning,
-                validation_data=self. __dataset_validation,
-                epochs = self.__training_epochs
-            )
+            model.compile(
+                optimizer=keras.optimizers.SGD(learning_rate=0.005, momentum=0.9), 
+                loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                metrics=['accuracy'])
+
+            steps_per_epoch = len(self.__dataset_tranning) 
+            validation_steps = len(self.__dataset_validation) 
+
+            model.fit(
+                 self.__dataset_tranning,
+                epochs=5, steps_per_epoch=steps_per_epoch,
+                validation_data=self.__dataset_validation,
+                validation_steps=validation_steps)
             model.save(self.__model_file)
+
+            return model
 
     # this method returns the label and the confidence in percentage
     def get_prediction(self, frame):
@@ -96,11 +88,16 @@ class NailbittingClassifier:
             self.__model_instance = self.__get_model()
 
         # Resizing into dimensions used while training
-        input = frame.resize((self.__img_height, self.__img_width))
-        input_array = np.array(input)
+        input_array = cv2.resize(frame, (self.__img_height, self.__img_width), interpolation = cv2.INTER_AREA)
+
         input_array = expand_dims(input_array, 0) # Create a batch
 
+        print("STARTING PREDICT")
+
         pred = self.__model_instance.predict(input_array)
+
         score = nn.softmax(pred[0])
+
+        print("score = " + str(score))
 
         return self.__class_names[np.argmax(score)], 100 * np.max(score)
