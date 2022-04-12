@@ -6,7 +6,7 @@ import numpy as np
 import mediapipe as mp
 
 
-classs = "nnb"
+classs = "nb"
 
 onlyfiles = [f for f in listdir("trainning_data/" + classs) if isfile(join("trainning_data/" + classs, f))]
 
@@ -38,5 +38,7 @@ for img in onlyfiles:
     bg_image = cv2.resize(bg_image, (width, height))
 
     output_image = np.where(condition, image, bg_image)
+
+    output_image = cv2.cvtColor(output_image, cv2.COLOR_BGR2GRAY)
 
     cv2.imwrite('trainning_data/' + classs + "/" + img, output_image)

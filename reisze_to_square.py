@@ -3,7 +3,7 @@ from os import listdir
 from os import remove
 from os.path import isfile, join
 
-classs = "nb"
+classs = "nnb"
 
 onlyfiles = [f for f in listdir("trainning_data/" + classs) if isfile(join("trainning_data/" + classs, f))]
 
@@ -12,5 +12,5 @@ for img in onlyfiles:
     originalImage = cv2.imread('trainning_data/' + classs + "/" + img)
     dimensions = originalImage.shape
     remove('trainning_data/' + classs + "/" + img)
-    editted = originalImage[0: dimensions[0], 0:480]
+    editted = originalImage[0: dimensions[0], 100:580]
     cv2.imwrite('trainning_data/' + classs + "/" + img, editted)

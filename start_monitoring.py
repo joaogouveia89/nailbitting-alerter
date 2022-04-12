@@ -24,7 +24,7 @@ def check_frame(frame):
   label, confidence = classifier.get_prediction(frame)
   to_prt = "bitting" if label == NailbittingClassification.BITING  else "non bitting"
   print("label is " + to_prt + " with accuracy " + str(confidence) + "%")
-  if label == NailbittingClassification.BITING and confidence >= 95:
+  if label == NailbittingClassification.BITING and confidence >= 90:
     generate_alert(frame)
 
 monitor = NailbittingMonitor(3)
